@@ -1,7 +1,18 @@
+import Image from "next/image";
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-white text-black">
       <section className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-6 text-center">
+
+        <Image
+          src="/logo.png"
+          alt="ShareBus Logo"
+          width={120}
+          height={120}
+          className="mb-6"
+        />
+
         <span className="mb-4 rounded-full bg-gray-100 px-4 py-2 text-sm font-medium">
           Welcome to ShareBus
         </span>
@@ -17,10 +28,10 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col gap-4 sm:flex-row">
-          <button className="rounded-xl bg-black px-6 py-3 text-white transition hover:opacity-90">
+          <button className="rounded-xl bg-black px-6 py-3 text-white">
             احجز الآن
           </button>
-          <button className="rounded-xl border border-black px-6 py-3 transition hover:bg-black hover:text-white">
+          <button className="rounded-xl border border-black px-6 py-3">
             اعرف أكثر
           </button>
         </div>
