@@ -1,15 +1,16 @@
 import { supabase } from "../../lip/supabase";
+import BookingForm from "./BookingForm";
 
 type Trip = {
   id: number;
-  badge: string;
-  badge_color: string;
   from_location: string;
   to_location: string;
-  time_text: string;
   price: number;
   duration_text: string;
-  description: string;
+  allow_weekly_subscription: boolean;
+  allow_monthly_subscription: boolean;
+  weekly_price: number | null;
+  monthly_price: number | null;
 };
 
 type TripSchedule = {
@@ -28,7 +29,7 @@ type TripStop = {
   is_active: boolean;
 };
 
-export default async function BookTripPage({
+export default async function TripPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -36,7 +37,7 @@ export default async function BookTripPage({
   const { id } = await params;
   const tripId = Number(id);
 
-  const { data: trip } = await supabase
+  const { data: trip, error: tripError } = await supabase
     .from("trips")
     .select("*")
     .eq("id", tripId)
@@ -49,27 +50,31 @@ export default async function BookTripPage({
     .eq("is_active", true)
     .order("id", { ascending: true });
 
-  const { data: stops } = await supabase
+  const { data: pickupStops } = await supabase
     .from("trip_stops")
     .select("*")
     .eq("trip_id", tripId)
     .eq("is_active", true)
+    .in("stop_type", ["pickup", "both"])
     .order("sort_order", { ascending: true });
 
-  const pickupStops =
-    (stops as TripStop[] | null)?.filter(
-      (stop) => stop.stop_type === "pickup" || stop.stop_type === "both"
-    ) ?? [];
-
-  const dropoffStops =
-    (stops as TripStop[] | null)?.filter(
-      (stop) => stop.stop_type === "dropoff" || stop.stop_type === "both"
-    ) ?? [];
+  const { data: dropoffStops } = await supabase
+    .from("trip_stops")
+    .select("*")
+    .eq("trip_id", tripId)
+    .eq("is_active", true)
+    .in("stop_type", ["dropoff", "both"])
+    .order("sort_order", { ascending: true });
 
   if (!trip) {
     return (
-      <main className="min-h-screen bg-[#eef8ff] px-6 py-16 text-center text-slate-900">
-        <h1 className="text-2xl font-bold">الرحلة غير موجودة</h1>
+      <main className="min-h-screen bg-[#eef8ff] px-6 py-12 text-slate-900">
+        <div className="mx-auto max-w-4xl rounded-[32px] bg-white/80 p-8 shadow-xl shadow-sky-900/5 ring-1 ring-white/70 backdrop-blur">
+          <h1 className="text-2xl font-bold text-red-500">الرحلة غير موجودة</h1>
+          <p className="mt-3 text-sm text-slate-500">
+            {tripError?.message || "الرحلة غير متاحة"}
+          </p>
+        </div>
       </main>
     );
   }
@@ -78,106 +83,51 @@ export default async function BookTripPage({
 
   return (
     <main className="min-h-screen bg-[#eef8ff] px-6 py-12 text-slate-900">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-8 rounded-[32px] bg-white/80 p-8 shadow-xl ring-1 ring-white/70 backdrop-blur">
-          <h1 className="mb-3 text-3xl font-bold">
-            احجز رحلتك: {tripData.from_location} ← {tripData.to_location}
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div className="rounded-[32px] bg-white/80 p-8 shadow-xl shadow-sky-900/5 ring-1 ring-white/70 backdrop-blur">
+          <div className="mb-6 flex items-center justify-between">
+            <span className="rounded-full bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 ring-1 ring-sky-100">
+              رحلة
+            </span>
+          </div>
+
+          <h1 className="mb-4 text-3xl font-bold md:text-4xl">
+            {tripData.from_location} ← {tripData.to_location}
           </h1>
 
-          <p className="text-slate-600">{tripData.description}</p>
-
-          {/* نقطة الالتقاء تحت اسم الخط */}
-          <div className="mt-6">
-            <label className="mb-2 block text-sm font-medium">
-              اختر نقطة الالتقاء
-            </label>
-
-            <select className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none">
-              <option value="">اختر نقطة الالتقاء</option>
-
-              {pickupStops.map((stop) => (
-                <option key={stop.id} value={stop.id}>
-                  {stop.stop_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">السعر</p>
-              <p className="font-semibold">{tripData.price} EGP</p>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+              <p className="text-sm text-slate-500">السعر الأساسي</p>
+              <p className="mt-1 text-lg font-bold">{Number(tripData.price)} EGP</p>
             </div>
 
-            <div className="rounded-2xl bg-slate-50 p-4">
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
               <p className="text-sm text-slate-500">المدة</p>
-              <p className="font-semibold">{tripData.duration_text}</p>
+              <p className="mt-1 text-lg font-bold">{tripData.duration_text}</p>
             </div>
 
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">الرحلة الأساسية</p>
-              <p className="font-semibold">{tripData.time_text}</p>
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+              <p className="text-sm text-slate-500">عدد المواعيد</p>
+              <p className="mt-1 text-lg font-bold">{schedules?.length || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-[32px] bg-white/80 p-8 shadow-xl ring-1 ring-white/70 backdrop-blur">
-          <h2 className="mb-6 text-2xl font-bold">اختر تفاصيل الحجز</h2>
-
-          <form className="space-y-6">
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                اختر المعاد
-              </label>
-              <select className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none">
-                <option value="">اختر المعاد</option>
-
-                {(schedules as TripSchedule[] | null)?.map((schedule) => (
-                  <option key={schedule.id} value={schedule.id}>
-                    {schedule.time_text}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                مكان الركوب
-              </label>
-              <select className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none">
-                <option value="">اختر مكان الركوب</option>
-
-                {pickupStops.map((stop) => (
-                  <option key={stop.id} value={stop.id}>
-                    {stop.stop_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                مكان النزول
-              </label>
-              <select className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none">
-                <option value="">اختر مكان النزول</option>
-
-                {dropoffStops.map((stop) => (
-                  <option key={stop.id} value={stop.id}>
-                    {stop.stop_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="button"
-              className="w-full rounded-2xl bg-sky-600 px-6 py-4 text-base font-semibold text-white transition hover:bg-sky-700"
-            >
-              متابعة الحجز
-            </button>
-          </form>
-        </div>
+        <BookingForm
+          tripId={tripData.id}
+          schedules={(schedules as TripSchedule[] | null) ?? []}
+          pickupStops={(pickupStops as TripStop[] | null) ?? []}
+          dropoffStops={(dropoffStops as TripStop[] | null) ?? []}
+          price={Number(tripData.price)}
+          allowWeeklySubscription={tripData.allow_weekly_subscription}
+          allowMonthlySubscription={tripData.allow_monthly_subscription}
+          weeklyPrice={
+            tripData.weekly_price !== null ? Number(tripData.weekly_price) : null
+          }
+          monthlyPrice={
+            tripData.monthly_price !== null ? Number(tripData.monthly_price) : null
+          }
+        />
       </div>
     </main>
   );
