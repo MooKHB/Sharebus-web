@@ -51,6 +51,7 @@ export default async function AdminPage() {
           <Card title="العربيات" value={vehiclesCount ?? 0} color="text-rose-700" />
           <Card title="العملاء" value={ridersCount ?? 0} color="text-slate-700" />
           <Card title="الاشتراكات" value={subscriptionsCount ?? 0} color="text-cyan-700" />
+          
         </div>
 
         <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-7">
@@ -61,6 +62,7 @@ export default async function AdminPage() {
           <QuickLink href="/admin/vehicles" label="العربيات" />
           <QuickLink href="/admin/subscriptions" label="الاشتراكات" />
           <QuickLink href="/admin/reports" label="التقارير" />
+          <QuickLink href="/admin/ride-requests" label="طلبات الرحلات" />
         </div>
       </div>
     </main>
