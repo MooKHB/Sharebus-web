@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import { supabase } from "../../../../lip/supabase-client";
 
 type Schedule = {
@@ -9,12 +10,9 @@ type Schedule = {
   is_active: boolean;
 };
 
-export default function TripSchedulesPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const tripId = Number(params.id);
+export default function TripSchedulesPage() {
+  const params = useParams();
+  const tripId = useMemo(() => Number(params?.id), [params]);
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [timeText, setTimeText] = useState("");
@@ -23,16 +21,25 @@ export default function TripSchedulesPage({
   const [editTimeText, setEditTimeText] = useState("");
 
   async function loadSchedules() {
-    const { data } = await supabase
+    if (!tripId || Number.isNaN(tripId)) return;
+
+    const { data, error } = await supabase
       .from("trip_schedules")
       .select("*")
       .eq("trip_id", tripId)
       .order("id", { ascending: true });
 
+    if (error) {
+      console.error(error);
+      setMessage(`حصل خطأ أثناء تحميل المواعيد: ${error.message}`);
+      return;
+    }
+
     setSchedules((data as Schedule[] | null) ?? []);
   }
 
   useEffect(() => {
+    if (!tripId || Number.isNaN(tripId)) return;
     loadSchedules();
   }, [tripId]);
 
@@ -40,14 +47,24 @@ export default function TripSchedulesPage({
     e.preventDefault();
     setMessage("");
 
+    if (!tripId || Number.isNaN(tripId)) {
+      setMessage("رقم الرحلة غير صحيح");
+      return;
+    }
+
+    if (!timeText.trim()) {
+      setMessage("المعاد مطلوب");
+      return;
+    }
+
     const { error } = await supabase.from("trip_schedules").insert({
       trip_id: tripId,
-      time_text: timeText,
+      time_text: timeText.trim(),
       is_active: true,
     });
 
     if (error) {
-      setMessage("حصل خطأ أثناء إضافة المعاد");
+      setMessage(`حصل خطأ أثناء إضافة المعاد: ${error.message}`);
       return;
     }
 
@@ -57,7 +74,16 @@ export default function TripSchedulesPage({
   }
 
   async function toggleSchedule(id: number, isActive: boolean) {
-    await supabase.from("trip_schedules").update({ is_active: !isActive }).eq("id", id);
+    const { error } = await supabase
+      .from("trip_schedules")
+      .update({ is_active: !isActive })
+      .eq("id", id);
+
+    if (error) {
+      setMessage(`حصل خطأ أثناء تحديث الحالة: ${error.message}`);
+      return;
+    }
+
     loadSchedules();
   }
 
@@ -69,12 +95,23 @@ export default function TripSchedulesPage({
   async function saveEdit() {
     if (!editingId) return;
 
-    await supabase
+    if (!editTimeText.trim()) {
+      setMessage("المعاد مطلوب");
+      return;
+    }
+
+    const { error } = await supabase
       .from("trip_schedules")
-      .update({ time_text: editTimeText })
+      .update({ time_text: editTimeText.trim() })
       .eq("id", editingId);
 
+    if (error) {
+      setMessage(`حصل خطأ أثناء حفظ التعديل: ${error.message}`);
+      return;
+    }
+
     setEditingId(null);
+    setMessage("تم تعديل المعاد");
     loadSchedules();
   }
 
@@ -82,7 +119,14 @@ export default function TripSchedulesPage({
     const confirmed = window.confirm("هل تريد حذف المعاد؟");
     if (!confirmed) return;
 
-    await supabase.from("trip_schedules").delete().eq("id", id);
+    const { error } = await supabase.from("trip_schedules").delete().eq("id", id);
+
+    if (error) {
+      setMessage(`حصل خطأ أثناء حذف المعاد: ${error.message}`);
+      return;
+    }
+
+    setMessage("تم حذف المعاد");
     loadSchedules();
   }
 
@@ -93,7 +137,7 @@ export default function TripSchedulesPage({
           <h1 className="text-3xl font-bold">المواعيد</h1>
         </div>
 
-        <form onSubmit={addSchedule} className="rounded-[32px] bg-white/80 p-6 shadow-xl shadow-sky-900/5 ring-1 ring-white/70 backdrop-blur space-y-4">
+        <form onSubmit={addSchedule} className="space-y-4 rounded-[32px] bg-white/80 p-6 shadow-xl shadow-sky-900/5 ring-1 ring-white/70 backdrop-blur">
           <input
             value={timeText}
             onChange={(e) => setTimeText(e.target.value)}
@@ -106,7 +150,7 @@ export default function TripSchedulesPage({
             إضافة معاد
           </button>
 
-          <div className="text-center text-sm">{message || "—"}</div>
+          <div className="text-center text-sm whitespace-pre-line">{message || "—"}</div>
         </form>
 
         <div className="rounded-[32px] bg-white/80 p-4 shadow-xl shadow-sky-900/5 ring-1 ring-white/70 backdrop-blur">
@@ -137,22 +181,22 @@ export default function TripSchedulesPage({
                     <div className="flex flex-wrap gap-2">
                       {editingId === schedule.id ? (
                         <>
-                          <button onClick={saveEdit} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs text-white">
+                          <button type="button" onClick={saveEdit} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs text-white">
                             حفظ
                           </button>
-                          <button onClick={() => setEditingId(null)} className="rounded-xl bg-slate-100 px-4 py-2 text-xs">
+                          <button type="button" onClick={() => setEditingId(null)} className="rounded-xl bg-slate-100 px-4 py-2 text-xs">
                             إلغاء
                           </button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEdit(schedule)} className="rounded-xl bg-slate-100 px-4 py-2 text-xs">
+                          <button type="button" onClick={() => startEdit(schedule)} className="rounded-xl bg-slate-100 px-4 py-2 text-xs">
                             تعديل
                           </button>
-                          <button onClick={() => toggleSchedule(schedule.id, schedule.is_active)} className="rounded-xl bg-amber-500 px-4 py-2 text-xs text-white">
+                          <button type="button" onClick={() => toggleSchedule(schedule.id, schedule.is_active)} className="rounded-xl bg-amber-500 px-4 py-2 text-xs text-white">
                             {schedule.is_active ? "إيقاف" : "تفعيل"}
                           </button>
-                          <button onClick={() => deleteSchedule(schedule.id)} className="rounded-xl bg-red-600 px-4 py-2 text-xs text-white">
+                          <button type="button" onClick={() => deleteSchedule(schedule.id)} className="rounded-xl bg-red-600 px-4 py-2 text-xs text-white">
                             حذف
                           </button>
                         </>

@@ -34,27 +34,26 @@ export default async function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#eef8ff] text-slate-900">
-      {/* Background blobs */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute right-[-120px] top-[-80px] h-[280px] w-[280px] rounded-full bg-sky-300/30 blur-3xl" />
         <div className="absolute left-[-80px] top-[120px] h-[260px] w-[260px] rounded-full bg-cyan-200/40 blur-3xl" />
         <div className="absolute bottom-[-120px] left-1/2 h-[320px] w-[320px] -translate-x-1/2 rounded-full bg-sky-400/20 blur-3xl" />
       </div>
 
-      {/* Navbar */}
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-white/80 p-2 shadow-sm ring-1 ring-black/5 backdrop-blur">
+          <div className="rounded-2xl bg-white/80 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur">
             <Image
               src="/logo.png"
               alt="ShareBus Logo"
-              width={42}
-              height={42}
+              width={58}
+              height={58}
               className="object-contain"
+              priority
             />
           </div>
           <div>
-            <p className="text-lg font-bold tracking-tight">ShareBus</p>
+            <p className="text-lg font-bold tracking-tight">Share Bus</p>
             <p className="text-xs text-slate-500">Smart Daily Transport</p>
           </div>
         </div>
@@ -88,9 +87,7 @@ export default async function Home() {
         <NavAuth />
       </header>
 
-      {/* Hero */}
       <section className="mx-auto grid min-h-[calc(100vh-88px)] max-w-7xl items-center gap-10 px-6 pb-16 pt-6 lg:grid-cols-2 lg:px-8">
-        {/* Text */}
         <div className="text-center lg:text-right">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-sm font-medium text-sky-700 shadow-sm ring-1 ring-sky-100 backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-sky-500" />
@@ -130,11 +127,9 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* Search Card */}
         <HeroSearchCard trips={((trips as Trip[] | null) ?? [])} />
       </section>
 
-      {/* How it works */}
       <section className="mx-auto max-w-7xl px-6 pb-24 lg:px-8">
         <div className="mb-12 text-center lg:text-right">
           <h2 className="text-3xl font-bold md:text-4xl">
@@ -175,7 +170,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Trips section */}
       <section
         id="trips"
         className="mx-auto max-w-7xl px-6 pb-24 lg:px-8"
@@ -258,14 +252,13 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="mx-auto max-w-7xl px-6 pb-10 lg:px-8">
         <div className="rounded-[32px] bg-white/80 p-8 shadow-xl shadow-sky-900/5 ring-1 ring-white/70 backdrop-blur">
           <div className="grid gap-8 md:grid-cols-3">
             <div>
               <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-2xl bg-sky-50 p-2">
-                  <img src="/logo.png" className="h-10 w-10 object-contain" />
+                <div className="rounded-2xl bg-sky-50 p-3">
+                  <img src="/logo.png" className="h-12 w-12 object-contain" />
                 </div>
                 <span className="text-lg font-bold">ShareBus</span>
               </div>
@@ -293,7 +286,7 @@ export default async function Home() {
                     className="flex w-fit items-center gap-2 transition hover:text-sky-600"
                   >
                     <Phone size={16} className="text-green-600" />
-                    <span>واتساب</span>
+                    <span>تواصل معنا </span>
                   </a>
                 </li>
                 <li>
@@ -304,7 +297,7 @@ export default async function Home() {
                     className="flex w-fit items-center gap-2 transition hover:text-sky-600"
                   >
                     <FaFacebook size={16} className="text-blue-600" />
-                    <span>ShareBus</span>
+                    <span>Share Bus</span>
                   </a>
                 </li>
               </ul>
@@ -313,7 +306,7 @@ export default async function Home() {
             <div>
               <h3 className="mb-4 font-semibold">تواصل معنا</h3>
               <ul className="space-y-2 text-sm text-slate-600">
-                <li>📧 support@sharebus.com</li>
+                <li>📧 support@sharebus-eg.netlify</li>
                 <li>📞 +201552168353</li>
                 <li>
                   <a
@@ -334,10 +327,10 @@ export default async function Home() {
                     className="flex w-fit items-center gap-2 transition hover:text-sky-600"
                   >
                     <FaFacebook size={16} className="text-blue-600" />
-                    <span>ShareBus</span>
+                    <span>Share Bus</span>
                   </a>
                 </li>
-                <li>📍 6th Of October, Giza, Egypt</li>
+                <li>📍 5th Nieghbourhood, 6th Of October, Giza, Egypt</li>
               </ul>
             </div>
           </div>
@@ -348,7 +341,6 @@ export default async function Home() {
         </div>
       </footer>
 
-      {/* Floating WhatsApp Button */}
       <a
         href="https://wa.link/eb4xdt"
         target="_blank"

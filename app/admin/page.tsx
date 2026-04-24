@@ -26,6 +26,10 @@ export default async function AdminPage() {
     .from("profiles")
     .select("*", { count: "exact", head: true });
 
+  const { count: subscriptionsCount } = await supabase
+    .from("subscriptions")
+    .select("*", { count: "exact", head: true });
+
   return (
     <main className="min-h-screen bg-[#eef8ff] px-6 py-12 text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -35,25 +39,27 @@ export default async function AdminPage() {
           </p>
           <h1 className="text-3xl font-bold md:text-4xl">Admin Dashboard</h1>
           <p className="mt-3 text-sm text-slate-500">
-            تحكم كامل في الرحلات، العملاء، العربيات، السواقين، الحجوزات والتقارير.
+            تحكم كامل في الرحلات، العملاء، العربيات، السواقين، الحجوزات والاشتراكات.
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-7">
           <Card title="الرحلات" value={tripsCount ?? 0} color="text-sky-700" />
           <Card title="الحجوزات" value={bookingsCount ?? 0} color="text-emerald-700" />
           <Card title="طلبات الرحلات" value={requestsCount ?? 0} color="text-amber-700" />
           <Card title="السواقين" value={driversCount ?? 0} color="text-violet-700" />
           <Card title="العربيات" value={vehiclesCount ?? 0} color="text-rose-700" />
           <Card title="العملاء" value={ridersCount ?? 0} color="text-slate-700" />
+          <Card title="الاشتراكات" value={subscriptionsCount ?? 0} color="text-cyan-700" />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-7">
           <QuickLink href="/admin/trips" label="إدارة الرحلات" primary />
           <QuickLink href="/admin/bookings" label="إدارة الحجوزات" />
           <QuickLink href="/admin/riders" label="Users / Riders" />
           <QuickLink href="/admin/drivers" label="السواقين" />
           <QuickLink href="/admin/vehicles" label="العربيات" />
+          <QuickLink href="/admin/subscriptions" label="الاشتراكات" />
           <QuickLink href="/admin/reports" label="التقارير" />
         </div>
       </div>

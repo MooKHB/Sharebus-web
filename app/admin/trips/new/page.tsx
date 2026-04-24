@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { supabase } from "../../../lip/supabase-client";
 
+const dayOptions = [
+  { key: "sunday", label: "الأحد" },
+  { key: "monday", label: "الاثنين" },
+  { key: "tuesday", label: "الثلاثاء" },
+  { key: "wednesday", label: "الأربعاء" },
+  { key: "thursday", label: "الخميس" },
+  { key: "friday", label: "الجمعة" },
+  { key: "saturday", label: "السبت" },
+];
+
 export default function NewTripPage() {
   const [fromLocation, setFromLocation] = useState("");
   const [toLocation, setToLocation] = useState("");
@@ -12,49 +22,121 @@ export default function NewTripPage() {
   const [description, setDescription] = useState("");
   const [badge, setBadge] = useState("متاحة");
   const [badgeColor, setBadgeColor] = useState("sky");
+
   const [allowWeeklySubscription, setAllowWeeklySubscription] = useState(false);
   const [allowMonthlySubscription, setAllowMonthlySubscription] = useState(false);
   const [weeklyPrice, setWeeklyPrice] = useState("");
   const [monthlyPrice, setMonthlyPrice] = useState("");
+
+  const [availableDays, setAvailableDays] = useState<string[]>([
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ]);
+
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
-  setLoading(true);
-  setMessage("");
-
-  const { data: createdTrip, error } = await supabase
-    .from("trips")
-    .insert({
-      from_location: fromLocation,
-      to_location: toLocation,
-      time_text: timeText,
-      price: Number(price),
-      duration_text: durationText,
-      description,
-      badge,
-      badge_color: badgeColor,
-      allow_weekly_subscription: allowWeeklySubscription,
-      allow_monthly_subscription: allowMonthlySubscription,
-      weekly_price: allowWeeklySubscription && weeklyPrice ? Number(weeklyPrice) : null,
-      monthly_price: allowMonthlySubscription && monthlyPrice ? Number(monthlyPrice) : null,
-      supports_round_trip: false,
-      is_active: true,
-    })
-    .select()
-    .single();
-
-  if (error || !createdTrip) {
-    console.error(error);
-    setMessage("حصل خطأ أثناء إضافة الرحلة");
-    setLoading(false);
-    return;
+  function toggleDay(day: string) {
+    setAvailableDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
   }
 
-  setMessage("تمت إضافة الرحلة بنجاح");
-  setLoading(false);
-}
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const safePrice = Number(price);
+      const safeWeeklyPrice =
+        allowWeeklySubscription && weeklyPrice.trim() !== ""
+          ? Number(weeklyPrice)
+          : null;
+      const safeMonthlyPrice =
+        allowMonthlySubscription && monthlyPrice.trim() !== ""
+          ? Number(monthlyPrice)
+          : null;
+
+      if (
+        !fromLocation.trim() ||
+        !toLocation.trim() ||
+        !timeText.trim() ||
+        !durationText.trim() ||
+        Number.isNaN(safePrice)
+      ) {
+        setMessage("من فضلك املأ البيانات الأساسية بشكل صحيح");
+        setLoading(false);
+        return;
+      }
+
+      if (availableDays.length === 0) {
+        setMessage("اختر يوم متاح واحد على الأقل");
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        from_location: fromLocation.trim(),
+        to_location: toLocation.trim(),
+        time_text: timeText.trim(),
+        price: safePrice,
+        duration_text: durationText.trim(),
+        description: description.trim() || "",
+        badge: badge.trim() || "متاحة",
+        badge_color: badgeColor.trim() || "sky",
+        is_active: true,
+        allow_weekly_subscription: allowWeeklySubscription,
+        allow_monthly_subscription: allowMonthlySubscription,
+        weekly_price: allowWeeklySubscription ? safeWeeklyPrice : null,
+        monthly_price: allowMonthlySubscription ? safeMonthlyPrice : null,
+        supports_round_trip: false,
+        available_days: availableDays,
+      };
+
+      const { error } = await supabase.from("trips").insert(payload);
+
+      if (error) {
+        console.error(error);
+        setMessage(`حصل خطأ أثناء إضافة الرحلة: ${error.message}`);
+        setLoading(false);
+        return;
+      }
+
+      setMessage("تمت إضافة الرحلة بنجاح");
+      setFromLocation("");
+      setToLocation("");
+      setTimeText("");
+      setPrice("");
+      setDurationText("");
+      setDescription("");
+      setBadge("متاحة");
+      setBadgeColor("sky");
+      setAllowWeeklySubscription(false);
+      setAllowMonthlySubscription(false);
+      setWeeklyPrice("");
+      setMonthlyPrice("");
+      setAvailableDays([
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ]);
+    } catch (err) {
+      console.error(err);
+      setMessage("حصل خطأ غير متوقع أثناء إضافة الرحلة");
+    }
+
+    setLoading(false);
+  }
 
   return (
     <main className="min-h-screen bg-[#eef8ff] px-6 py-12 text-slate-900">
@@ -70,6 +152,26 @@ export default function NewTripPage() {
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="الوصف" className="min-h-[120px] w-full rounded-2xl border border-slate-200 px-4 py-3" />
           <input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Badge" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
           <input value={badgeColor} onChange={(e) => setBadgeColor(e.target.value)} placeholder="Badge Color" className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+
+          <div className="rounded-2xl border border-slate-200 p-4">
+            <p className="mb-3 text-sm font-semibold">الأيام المتاحة للرحلة</p>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {dayOptions.map((day) => (
+                <button
+                  key={day.key}
+                  type="button"
+                  onClick={() => toggleDay(day.key)}
+                  className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    availableDays.includes(day.key)
+                      ? "bg-emerald-600 text-white"
+                      : "bg-white text-slate-700 ring-1 ring-slate-200"
+                  }`}
+                >
+                  {day.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -118,7 +220,7 @@ export default function NewTripPage() {
           </button>
         </form>
 
-        <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm ring-1 ring-slate-100">
+        <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm ring-1 ring-slate-100 whitespace-pre-line">
           {message || "—"}
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { supabase } from "../../lip/supabase";
 import BookingForm from "./BookingForm";
+import Toast from "@/app/components/Toast";
 
 type Trip = {
   id: number;
@@ -11,6 +12,10 @@ type Trip = {
   allow_monthly_subscription: boolean;
   weekly_price: number | null;
   monthly_price: number | null;
+  reverse_trip_id: number | null;
+  supports_round_trip: boolean;
+  available_days: string[] | null;
+  payment_methods: string[] | null;
 };
 
 type TripSchedule = {
@@ -85,12 +90,6 @@ export default async function TripPage({
     <main className="min-h-screen bg-[#eef8ff] px-6 py-12 text-slate-900">
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="rounded-[32px] bg-white/80 p-8 shadow-xl shadow-sky-900/5 ring-1 ring-white/70 backdrop-blur">
-          <div className="mb-6 flex items-center justify-between">
-            <span className="rounded-full bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 ring-1 ring-sky-100">
-              رحلة
-            </span>
-          </div>
-
           <h1 className="mb-4 text-3xl font-bold md:text-4xl">
             {tripData.from_location} ← {tripData.to_location}
           </h1>
@@ -119,14 +118,14 @@ export default async function TripPage({
           pickupStops={(pickupStops as TripStop[] | null) ?? []}
           dropoffStops={(dropoffStops as TripStop[] | null) ?? []}
           price={Number(tripData.price)}
-          allowWeeklySubscription={tripData.allow_weekly_subscription}
-          allowMonthlySubscription={tripData.allow_monthly_subscription}
-          weeklyPrice={
-            tripData.weekly_price !== null ? Number(tripData.weekly_price) : null
-          }
-          monthlyPrice={
-            tripData.monthly_price !== null ? Number(tripData.monthly_price) : null
-          }
+          allowWeeklySubscription={Boolean(tripData.allow_weekly_subscription)}
+          allowMonthlySubscription={Boolean(tripData.allow_monthly_subscription)}
+          weeklyPrice={tripData.weekly_price !== null ? Number(tripData.weekly_price) : null}
+          monthlyPrice={tripData.monthly_price !== null ? Number(tripData.monthly_price) : null}
+          reverseTripId={tripData.reverse_trip_id ?? null}
+          supportsRoundTrip={Boolean(tripData.supports_round_trip)}
+          availableDays={tripData.available_days ?? []}
+          tripPaymentMethods={tripData.payment_methods ?? ["cash", "instapay"]}
         />
       </div>
     </main>

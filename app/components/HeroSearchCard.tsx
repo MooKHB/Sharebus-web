@@ -5,7 +5,7 @@ import { MapPin, Navigation, Search } from "lucide-react";
 
 declare global {
   interface Window {
-    google: typeof google;
+    google: any;
   }
 }
 
@@ -28,7 +28,7 @@ export default function HeroSearchCard({
   trips: Trip[];
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<any>(null);
 
   const [mapsReady, setMapsReady] = useState(false);
   const [destination, setDestination] = useState("");

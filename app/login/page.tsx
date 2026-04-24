@@ -93,10 +93,7 @@ export default function LoginPage() {
       : "";
 
   const phoneError =
-    submitted &&
-    mode === "login" &&
-    loginType === "user" &&
-    !isValidEgyptMobile(phone)
+    submitted && mode === "signup" && !isValidEgyptMobile(phone)
       ? "اكتب رقم موبايل مصري صحيح"
       : "";
 
@@ -116,12 +113,17 @@ export default function LoginPage() {
 
     if (mode === "signup") {
       if (!fullName.trim()) {
-        setMessage("من فضلك املأ كل البيانات المطلوبة");
+        setMessage("من فضلك اكتب الاسم");
         return;
       }
 
       if (!email.trim()) {
         setMessage("من فضلك اكتب الإيميل");
+        return;
+      }
+
+      if (!isValidEgyptMobile(phone)) {
+        setMessage("من فضلك اكتب رقم موبايل مصري صحيح");
         return;
       }
 
@@ -137,9 +139,9 @@ export default function LoginPage() {
 
       setLoading(true);
 
-      const normalizedPhone = phone ? normalizeEgyptPhone(phone) : null;
-
       try {
+        const normalizedPhone = normalizeEgyptPhone(phone);
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -175,7 +177,6 @@ export default function LoginPage() {
       return;
     }
 
-    // LOGIN
     if (!password.trim()) {
       setMessage("من فضلك اكتب كلمة المرور");
       return;
@@ -206,8 +207,24 @@ export default function LoginPage() {
         return;
       }
 
+      if (email.trim()) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          setMessage(error.message || "الإيميل أو كلمة المرور غير صحيحة");
+          setLoading(false);
+          return;
+        }
+
+        window.location.href = "/";
+        return;
+      }
+
       if (!isValidEgyptMobile(phone)) {
-        setMessage("من فضلك اكتب رقم موبايل مصري صحيح");
+        setMessage("اكتب الإيميل أو رقم موبايل صحيح");
         setLoading(false);
         return;
       }
@@ -249,8 +266,8 @@ export default function LoginPage() {
 
             <p className="mt-3 text-sm leading-7 text-slate-500">
               {mode === "login"
-                ? "سجّل دخولك لمتابعة رحلاتك أو الدخول للإدارة."
-                : "أنشئ حسابك بالاسم والبريد الإلكتروني وكلمة المرور."}
+                ? "سجّل دخولك ببياناتك لمتابعة رحلاتك أو الدخول للإدارة."
+                : "أنشئ حسابك بالاسم والإيميل ورقم التليفون وكلمة المرور."}
             </p>
 
             <p className="mt-4 text-xs text-slate-500">
@@ -316,60 +333,59 @@ export default function LoginPage() {
               </div>
             )}
 
-            {(mode === "signup" || (mode === "login" && loginType === "admin")) && (
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  الإيميل <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@email.com"
-                  className={`w-full rounded-2xl border bg-white px-4 py-3 text-black outline-none ${
-                    emailError ? "border-red-400" : "border-slate-200"
-                  }`}
-                  required
-                />
-                {emailError && (
-                  <p className="mt-2 text-xs text-red-500">{emailError}</p>
-                )}
-              </div>
-            )}
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                الإيميل {mode === "signup" || loginType === "admin" ? <span className="text-red-500">*</span> : null}
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@email.com"
+                className={`w-full rounded-2xl border bg-white px-4 py-3 text-black outline-none ${
+                  emailError ? "border-red-400" : "border-slate-200"
+                }`}
+              />
+              {mode === "login" && loginType === "user" && (
+                <p className="mt-2 text-xs text-slate-400">
+                  في تسجيل الدخول للمستخدم، ممكن تدخل بالإيميل أو بالموبايل
+                </p>
+              )}
+              {emailError && (
+                <p className="mt-2 text-xs text-red-500">{emailError}</p>
+              )}
+            </div>
 
-            {mode === "login" && loginType === "user" && (
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  رقم التليفون <span className="text-red-500">*</span>
-                </label>
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                رقم التليفون {mode === "signup" ? <span className="text-red-500">*</span> : null}
+              </label>
 
-                <div
-                  className={`flex items-center overflow-hidden rounded-2xl border bg-white ${
-                    phoneError ? "border-red-400" : "border-slate-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 border-l border-slate-200 bg-slate-50 px-4 py-3">
-                    <span className="text-lg">🇪🇬</span>
-                    <span className="text-sm font-medium text-slate-600">+20</span>
-                  </div>
-
-                  <input
-                    type="tel"
-                    dir="ltr"
-                    inputMode="numeric"
-                    value={phone}
-                    onChange={(e) => setPhone(sanitizeEgyptPhoneInput(e.target.value))}
-                    placeholder="1XXXXXXXXX"
-                    className="w-full bg-white px-4 py-3 text-black outline-none"
-                    required
-                  />
+              <div
+                className={`flex items-center overflow-hidden rounded-2xl border bg-white ${
+                  phoneError ? "border-red-400" : "border-slate-200"
+                }`}
+              >
+                <div className="flex items-center gap-2 border-l border-slate-200 bg-slate-50 px-4 py-3">
+                  <span className="text-sm font-medium text-slate-600">EG</span>
+                  <span className="text-sm font-medium text-slate-600">+20</span>
                 </div>
 
-                {phoneError && (
-                  <p className="mt-2 text-xs text-red-500">{phoneError}</p>
-                )}
+                <input
+                  type="tel"
+                  dir="ltr"
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => setPhone(sanitizeEgyptPhoneInput(e.target.value))}
+                  placeholder="1XXXXXXXXX"
+                  className="w-full bg-white px-4 py-3 text-black outline-none"
+                />
               </div>
-            )}
+
+              {phoneError && (
+                <p className="mt-2 text-xs text-red-500">{phoneError}</p>
+              )}
+            </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium">
@@ -381,6 +397,14 @@ export default function LoginPage() {
                   passwordError ? "border-red-400" : "border-slate-200"
                 }`}
               >
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="px-4 text-slate-500"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -389,14 +413,6 @@ export default function LoginPage() {
                   className="w-full bg-white px-4 py-3 text-black outline-none"
                   required
                 />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="px-4 text-slate-500"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
 
               {passwordError && (

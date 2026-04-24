@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Admin Dashboard - Share Bus",
+  description: "",
+};
+
 export default function AdminLayout({
   children,
 }: {
@@ -5,7 +12,3 @@ export default function AdminLayout({
 }) {
   return <>{children}</>;
 }
-export const metadata: Metadata = {
-  title: "Admin Dashboard - Share Bus",
-  description: "",
-};
