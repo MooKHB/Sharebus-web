@@ -40,52 +40,26 @@ export default async function Home() {
         <div className="absolute bottom-[-120px] left-1/2 h-[320px] w-[320px] -translate-x-1/2 rounded-full bg-sky-400/20 blur-3xl" />
       </div>
 
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-white/80 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur">
-            <Image
-              src="/logo.png"
-              alt="ShareBus Logo"
-              width={58}
-              height={58}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <div>
-            <p className="text-lg font-bold tracking-tight">Share Bus</p>
-            <p className="text-xs text-slate-500">Smart Daily Transport</p>
-          </div>
-        </div>
+      <header className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex items-center justify-center gap-4 sm:justify-start">
+    <div className="rounded-[24px] bg-white p-3 shadow-md ring-1 ring-slate-200">
+      <img
+        src="/sharebus-logo.png"
+        alt="Share Bus"
+        className="h-16 w-16 object-contain"
+      />
+    </div>
 
-        <nav className="hidden items-center gap-8 md:flex">
-          <a
-            href="#"
-            className="text-sm font-medium text-slate-600 transition hover:text-sky-600"
-          >
-            الرئيسية
-          </a>
+    <div>
+      <h1 className="text-2xl font-bold text-slate-950">Share Bus</h1>
+      <p className="text-sm text-slate-500">Smart Daily Transport</p>
+    </div>
+  </div>
 
-          <Link
-            href="/trips"
-            className="text-sm font-medium text-slate-600 transition hover:text-sky-600"
-          >
-            الرحلات
-          </Link>
-
-          <a
-            href="https://wa.link/eb4xdt"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-sky-600"
-          >
-            <Phone size={16} className="text-green-600" />
-            <span>تواصل معنا</span>
-          </a>
-        </nav>
-
-        <NavAuth />
-      </header>
+  <div className="w-full sm:w-auto">
+    <NavAuth />
+  </div>
+</header>
 
       <section className="mx-auto grid min-h-[calc(100vh-88px)] max-w-7xl items-center gap-10 px-6 pb-16 pt-6 lg:grid-cols-2 lg:px-8">
         <div className="text-center lg:text-right">
