@@ -1,11 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lip/supabase-client";
 
 export default function UserMenu() {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   async function logout() {
     await supabase.auth.signOut();
@@ -13,40 +25,46 @@ export default function UserMenu() {
   }
 
   return (
-    <div className="relative">
+    <div ref={menuRef} className="relative z-50">
       <button
-        onClick={() => setOpen(!open)}
-        className="rounded-full bg-sky-600 px-4 py-2 text-white"
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 text-2xl font-bold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-700"
+        aria-label="فتح القائمة"
       >
         ☰
       </button>
 
       {open && (
-        <div className="absolute left-0 mt-2 w-44 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
+        <div className="absolute left-0 top-[68px] w-52 overflow-hidden rounded-3xl bg-white p-2 text-right shadow-2xl ring-1 ring-slate-200 sm:left-0">
           <Link
             href="/profile"
-            className="block rounded-xl px-4 py-2 text-sm hover:bg-slate-100"
+            onClick={() => setOpen(false)}
+            className="block rounded-2xl px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
           >
             حسابي
           </Link>
 
           <Link
             href="/my-bookings"
-            className="block rounded-xl px-4 py-2 text-sm hover:bg-slate-100"
+            onClick={() => setOpen(false)}
+            className="block rounded-2xl px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
           >
             حجوزاتي
           </Link>
 
           <Link
             href="/subscriptions"
-            className="block rounded-xl px-4 py-2 text-sm hover:bg-slate-100"
+            onClick={() => setOpen(false)}
+            className="block rounded-2xl px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
           >
             اشتراكاتي
           </Link>
 
           <button
+            type="button"
             onClick={logout}
-            className="block w-full rounded-xl px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50"
+            className="block w-full rounded-2xl px-4 py-3 text-right text-sm font-bold text-red-600 hover:bg-red-50"
           >
             تسجيل الخروج
           </button>
