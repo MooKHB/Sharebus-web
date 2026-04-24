@@ -1,105 +1,61 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "../lip/supabase-client";
 
-type Profile = {
-  id: string;
-  full_name: string | null;
-  phone: string | null;
-};
-
 export default function NavAuth() {
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ id: string } | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
-    async function loadUser() {
+    async function checkSession() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      const currentUser = session?.user ?? null;
-      setUser(currentUser ? { id: currentUser.id } : null);
-
-      if (currentUser) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, full_name, phone")
-          .eq("id", currentUser.id)
-          .maybeSingle();
-
-        setProfile(data ?? null);
-      }
-
-      setLoading(false);
+      setLoggedIn(Boolean(session?.user));
     }
 
-    loadUser();
+    checkSession();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser ? { id: currentUser.id } : null);
-
-      if (currentUser) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, full_name, phone")
-          .eq("id", currentUser.id)
-          .maybeSingle();
-
-        setProfile(data ?? null);
-      } else {
-        setProfile(null);
-      }
-
-      setLoading(false);
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(Boolean(session?.user));
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="hidden md:block">
-        <div className="rounded-full bg-slate-200 px-5 py-2.5 text-sm">
-          ...
-        </div>
-      </div>
-    );
+  if (loggedIn === null) {
+    return null;
   }
 
-  if (!user) {
+  if (loggedIn) {
     return (
-      <div className="hidden items-center gap-3 md:flex">
-        <Link
-          href="/login"
-          className="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-slate-900 ring-1 ring-slate-200 transition hover:bg-slate-50"
-        >
-          تسجيل الدخول
-        </Link>
-
-        <Link
-          href="/login?mode=signup"
-          className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-sky-600"
-        >
-          إنشاء حساب جديد
-        </Link>
-      </div>
+      <Link
+        href="/profile"
+        className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white"
+      >
+        حسابي
+      </Link>
     );
   }
 
   return (
-    <div className="hidden md:block">
+    <div className="flex items-center gap-2">
       <Link
-        href="/profile"
-        className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-sky-600"
+        href="/login"
+        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200"
       >
-        {profile?.full_name ? `حسابي` : "حسابي"}
+        تسجيل الدخول
+      </Link>
+
+      <Link
+        href="/login?mode=signup"
+        className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white"
+      >
+        إنشاء حساب
       </Link>
     </div>
   );

@@ -6,9 +6,9 @@ export const metadata: Metadata = {
   title: "Share Bus - شير باص",
   description: "Smart Daily Transport",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
