@@ -79,7 +79,20 @@ const bookingTypeDetails: Record<BookingType, { title: string; desc: string }> =
 };
 
 function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
+  return formatDateLocal(date);
+}
+
+function formatDateLocal(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function parseLocalDate(dateString: string) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
 function sameMonth(date: Date, monthDate: Date) {
@@ -139,7 +152,7 @@ export default function BookingForm({
 
   const canShowRoundTrip = Boolean(supportsRoundTrip || reverseTripId);
   const canBookRoundTrip = Boolean(reverseTripId);
-  const todayString = formatDate(new Date());
+  const todayString = formatDateLocal(new Date());
 
   const isBuyingSubscription =
     bookingType === "weekly" || bookingType === "monthly";
@@ -162,7 +175,7 @@ export default function BookingForm({
 
       await supabase.rpc("expire_old_subscriptions");
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = formatDateLocal(new Date());
 
       const { data: subs } = await supabase
         .from("subscriptions")
@@ -292,7 +305,7 @@ export default function BookingForm({
       const date = new Date(start);
       date.setDate(start.getDate() + i);
       const dayName = dayMap[date.getDay()];
-      const dateString = formatDate(date);
+      const dateString = formatDateLocal(date);
       const isAvailable = availableDays.includes(dayName);
       const isCurrentMonth = sameMonth(date, calendarMonth);
       const isPast = dateString < todayString;
@@ -312,7 +325,7 @@ export default function BookingForm({
     if (!user) throw new Error("لازم تسجل دخول الأول");
 
     const startDate = bookingDate || todayString;
-    const start = new Date(startDate);
+    const start = parseLocalDate(startDate);
 
     const startDayName = dayMap[start.getDay()];
     if (!availableDays.includes(startDayName)) {
@@ -338,8 +351,8 @@ export default function BookingForm({
       plan_type: plan,
       total_credits: totalCredits,
       remaining_credits: totalCredits,
-      starts_at: start.toISOString().slice(0, 10),
-      expires_at: expires.toISOString().slice(0, 10),
+      starts_at: formatDateLocal(start),
+      expires_at: formatDateLocal(expires),
       status: "active",
     });
 
@@ -454,7 +467,7 @@ export default function BookingForm({
         throw new Error("لا يمكن الحجز على تاريخ قديم");
       }
 
-      const chosenDate = new Date(bookingDate);
+      const chosenDate = parseLocalDate(bookingDate);
       const chosenDayName = dayMap[chosenDate.getDay()];
       if (!availableDays.includes(chosenDayName)) {
         throw new Error("اليوم المختار غير متاح لهذه الرحلة");
