@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lip/supabase-client";
+
+type RelationOneOrMany<T> = T | T[] | null;
 
 type BookingRow = {
   id: number;
@@ -17,20 +19,23 @@ type BookingRow = {
   seats: number;
   confirmed_driver_id: number | null;
   confirmed_vehicle_id: number | null;
-  trips?: {
+
+  trips: RelationOneOrMany<{
     from_location: string | null;
     to_location: string | null;
-  } | null;
-  pickup_stop?: {
+  }>;
+
+  pickup_stop: RelationOneOrMany<{
     stop_name: string | null;
     lat: number | null;
     lng: number | null;
-  } | null;
-  dropoff_stop?: {
+  }>;
+
+  dropoff_stop: RelationOneOrMany<{
     stop_name: string | null;
     lat: number | null;
     lng: number | null;
-  } | null;
+  }>;
 };
 
 type ProfileRow = {
@@ -45,10 +50,87 @@ function mapsLink(lat?: number | null, lng?: number | null) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
 
+function getOne<T>(value: RelationOneOrMany<T>): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+function getTripLabel(booking: BookingRow) {
+  const trip = getOne(booking.trips);
+  const from = trip?.from_location || "—";
+  const to = trip?.to_location || "—";
+  return `${from} ← ${to}`;
+}
+
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, ProfileRow>>({});
   const [message, setMessage] = useState("");
+
+  const [bookingTypeFilter, setBookingTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [tripFilter, setTripFilter] = useState("all");
+
+  const bookingTypes = useMemo(() => {
+    const types = bookings
+      .map((booking) => booking.booking_type)
+      .filter((type): type is string => Boolean(type));
+
+    return ["all", ...Array.from(new Set(types))];
+  }, [bookings]);
+
+  const statuses = useMemo(() => {
+    const items = bookings
+      .map((booking) => booking.status)
+      .filter((status): status is string => Boolean(status));
+
+    return ["all", ...Array.from(new Set(items))];
+  }, [bookings]);
+
+  const paymentMethods = useMemo(() => {
+    const methods = bookings
+      .map((booking) => booking.payment_method)
+      .filter((method): method is string => Boolean(method));
+
+    return ["all", ...Array.from(new Set(methods))];
+  }, [bookings]);
+
+  const trips = useMemo(() => {
+    const tripMap = new Map<number, string>();
+
+    bookings.forEach((booking) => {
+      if (!booking.trip_id) return;
+      tripMap.set(booking.trip_id, getTripLabel(booking));
+    });
+
+    return [
+      { value: "all", label: "كل الرحلات" },
+      ...Array.from(tripMap.entries()).map(([id, label]) => ({
+        value: String(id),
+        label,
+      })),
+    ];
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((booking) => {
+      const matchType =
+        bookingTypeFilter === "all" ||
+        booking.booking_type === bookingTypeFilter;
+
+      const matchStatus =
+        statusFilter === "all" || booking.status === statusFilter;
+
+      const matchPayment =
+        paymentFilter === "all" || booking.payment_method === paymentFilter;
+
+      const matchTrip =
+        tripFilter === "all" || String(booking.trip_id) === tripFilter;
+
+      return matchType && matchStatus && matchPayment && matchTrip;
+    });
+  }, [bookings, bookingTypeFilter, statusFilter, paymentFilter, tripFilter]);
 
   async function loadAll() {
     setMessage("");
@@ -91,7 +173,7 @@ export default function AdminBookingsPage() {
       return;
     }
 
-    const rows = (data as BookingRow[] | null) ?? [];
+    const rows = (data as unknown as BookingRow[] | null) ?? [];
     setBookings(rows);
 
     const userIds = [...new Set(rows.map((b) => b.user_id).filter(Boolean))];
@@ -103,7 +185,9 @@ export default function AdminBookingsPage() {
         .in("id", userIds);
 
       if (profilesError) {
-        setMessage(`تم تحميل الحجوزات، لكن حصل خطأ أثناء تحميل بيانات العملاء: ${profilesError.message}`);
+        setMessage(
+          `تم تحميل الحجوزات، لكن حصل خطأ أثناء تحميل بيانات العملاء: ${profilesError.message}`
+        );
         return;
       }
 
@@ -168,6 +252,91 @@ export default function AdminBookingsPage() {
           </div>
         </div>
 
+        <div className="rounded-[28px] bg-white/80 p-5 shadow-xl shadow-sky-900/5 ring-1 ring-white/70">
+          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-bold">فلترة الحجوزات</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                اختار الفلاتر المناسبة لعرض الحجوزات المطلوبة فقط.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
+              {filteredBookings.length} / {bookings.length}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-600">
+                نوع الحجز
+              </label>
+              <select
+                value={bookingTypeFilter}
+                onChange={(e) => setBookingTypeFilter(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              >
+                {bookingTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type === "all" ? "كل أنواع الحجوزات" : type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-600">
+                حالة الرحلة
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              >
+                {statuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status === "all" ? "كل الحالات" : status}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-600">
+                طريقة الدفع
+              </label>
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              >
+                {paymentMethods.map((method) => (
+                  <option key={method} value={method}>
+                    {method === "all" ? "كل طرق الدفع" : method}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-600">
+                الرحلة
+              </label>
+              <select
+                value={tripFilter}
+                onChange={(e) => setTripFilter(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              >
+                {trips.map((trip) => (
+                  <option key={trip.value} value={trip.value}>
+                    {trip.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
         {message && (
           <div className="rounded-2xl bg-white px-4 py-3 text-center text-sm ring-1 ring-slate-100">
             {message}
@@ -193,18 +362,15 @@ export default function AdminBookingsPage() {
             </thead>
 
             <tbody>
-              {bookings.map((booking) => {
+              {filteredBookings.map((booking) => {
                 const profile = profilesMap[booking.user_id];
 
-                const pickupLink = mapsLink(
-                  booking.pickup_stop?.lat,
-                  booking.pickup_stop?.lng
-                );
+                const trip = getOne(booking.trips);
+                const pickupStop = getOne(booking.pickup_stop);
+                const dropoffStop = getOne(booking.dropoff_stop);
 
-                const dropoffLink = mapsLink(
-                  booking.dropoff_stop?.lat,
-                  booking.dropoff_stop?.lng
-                );
+                const pickupLink = mapsLink(pickupStop?.lat, pickupStop?.lng);
+                const dropoffLink = mapsLink(dropoffStop?.lat, dropoffStop?.lng);
 
                 return (
                   <tr key={booking.id} className="border-b border-slate-100 text-sm">
@@ -223,13 +389,12 @@ export default function AdminBookingsPage() {
                     </td>
 
                     <td className="px-4 py-4 font-semibold">
-                      {booking.trips?.from_location || "—"} ←{" "}
-                      {booking.trips?.to_location || "—"}
+                      {trip?.from_location || "—"} ← {trip?.to_location || "—"}
                     </td>
 
                     <td className="px-4 py-4">
                       <div className="font-semibold">
-                        {booking.pickup_stop?.stop_name || "—"}
+                        {pickupStop?.stop_name || "—"}
                       </div>
 
                       {pickupLink ? (
@@ -250,7 +415,7 @@ export default function AdminBookingsPage() {
 
                     <td className="px-4 py-4">
                       <div className="font-semibold">
-                        {booking.dropoff_stop?.stop_name || "—"}
+                        {dropoffStop?.stop_name || "—"}
                       </div>
 
                       {dropoffLink ? (
@@ -289,10 +454,10 @@ export default function AdminBookingsPage() {
                 );
               })}
 
-              {bookings.length === 0 && (
+              {filteredBookings.length === 0 && (
                 <tr>
                   <td colSpan={11} className="px-4 py-8 text-center text-slate-500">
-                    لا توجد حجوزات
+                    لا توجد حجوزات مطابقة للفلاتر المختارة
                   </td>
                 </tr>
               )}
