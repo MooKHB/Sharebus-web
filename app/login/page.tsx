@@ -165,9 +165,11 @@ export default function LoginPage() {
           return;
         }
 
-        setMessage(
-          "تم إنشاء الحساب بنجاح ✔️\nهيجيلك إيميل لتأكيد تفعيل حسابك من ShareBus\nلو ملقيتش الإيميل، راجع Spam"
-        );
+        setMessage("تم تسجيل الدخول بنجاح ✔️");
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 800);
       } catch (err) {
         console.error(err);
         setMessage("حصل خطأ غير متوقع");
@@ -335,7 +337,10 @@ export default function LoginPage() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                الإيميل {mode === "signup" || loginType === "admin" ? <span className="text-red-500">*</span> : null}
+                الإيميل{" "}
+                {mode === "signup" || loginType === "admin" ? (
+                  <span className="text-red-500">*</span>
+                ) : null}
               </label>
               <input
                 type="email"
@@ -358,7 +363,10 @@ export default function LoginPage() {
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                رقم التليفون {mode === "signup" ? <span className="text-red-500">*</span> : null}
+                رقم التليفون{" "}
+                {mode === "signup" ? (
+                  <span className="text-red-500">*</span>
+                ) : null}
               </label>
 
               <div
@@ -376,7 +384,9 @@ export default function LoginPage() {
                   dir="ltr"
                   inputMode="numeric"
                   value={phone}
-                  onChange={(e) => setPhone(sanitizeEgyptPhoneInput(e.target.value))}
+                  onChange={(e) =>
+                    setPhone(sanitizeEgyptPhoneInput(e.target.value))
+                  }
                   placeholder="1XXXXXXXXX"
                   className="w-full bg-white px-4 py-3 text-black outline-none"
                 />
